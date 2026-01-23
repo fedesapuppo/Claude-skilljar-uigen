@@ -30,12 +30,38 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Project Setup
+        run: |
+          npm run setup
+          npm run dev:daemon
+
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
+          custom_instructions: |
+            The project is already set up with all dependencies installed and the database migrated.
+            The server is running on port 3000. Logs from it are being written to logs.txt. If needed, you
+            can query the db with the 'sqlite3' cli. If needed, use the mcp__playwright tool to launch
+            a browser and interact with the application.
+
+          mcp_config: |
+            {
+              "mcpServers": {
+                "mcp__playwright": {
+                  "command": "npx",
+                  "args": [
+                    "@playwright/mcp@latest",
+                    "--allowed-origins",
+                    "localhost:3000;cdn.tailwindcss.com;esm.sh"
+                  ]
+                }
+              }
+            }
+
+            allowed_tools: "Bash(npm:*),Bash(sqlite3:*),mcp__playwright__browser_snapshot,mcp__playwright__browser_console,mcp__playwright__browser_logs,mcp__playwright__browser_network,mcp__playwright__browser_storage,mcp__playwright__browser_timeline,mcp__playwright__browser_console_logs,mcp__playwright__browser_console_network,mcp__playwright__browser_console_storage,mcp__playwright__browser_console_timeline,mcp__playwright__browser_click"
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
             actions: read
@@ -47,4 +73,3 @@ jobs:
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
           # claude_args: '--allowed-tools Bash(gh pr:*)'
-
